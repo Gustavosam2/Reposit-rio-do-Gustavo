@@ -1,0 +1,100 @@
+import sqlite3
+import customtkinter as ctk
+from tkinter import messagebox
+
+# Configuração de tema do CustomTkinter (Modo Escuro / Tema Azul)
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("blue")
+
+# --- 1. CONFIGURAÇÃO DO BANCO DE DADOS (SQL) ---
+def conectar_bd():
+    conexao = sqlite3.connect('jogos.db')
+    cursor = conexao.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS jogos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            categoria TEXT NOT NULL,
+            nota REAL NOT NULL,
+            status TEXT NOT NULL
+        )
+    ''')
+    conexao.commit()
+    conexao.close()
+
+def cadastrar_jogo():
+    nome = entry_nome.get()
+    categoria = combo_categoria.get()
+    nota = entry_nota.get()
+    status = combo_status.get()
+
+    if not nome or not nota:
+        messagebox.showwarning("Aviso", "Preencha o Nome e a Nota!")
+        return
+
+    try:
+        nota_num = float(nota)
+        if nota_num < 0 or nota_num > 10:
+            messagebox.showwarning("Aviso", "A Nota deve ser entre 0 e 10!")
+            return
+    except ValueError:
+        messagebox.showwarning("Aviso", "A Nota precisa ser um número!")
+        return
+
+    # Comando SQL para inserir no Banco de Dados
+    conexao = sqlite3.connect('jogos.db')
+    cursor = conexao.cursor()
+    cursor.execute('''
+        INSERT INTO jogos (nome, categoria, nota, status) 
+        VALUES (?, ?, ?, ?)
+    ''', (nome, categoria, nota_num, status))
+    conexao.commit()
+    conexao.close()
+
+    messagebox.showinfo("Sucesso", f"🎮 '{nome}' adicionado à sua biblioteca!")
+    
+    # Limpa o campo de nome e nota
+    entry_nome.delete(0, 'end')
+    entry_nota.delete(0, 'end')
+
+# --- 2. INTERFACE GRÁFICA ---
+conectar_bd()
+
+app = ctk.CTk()
+app.title("🎮 Meu Game Tracker")
+app.geometry("400x520")
+app.resizable(False, False)
+
+# Título
+label_titulo = ctk.CTkLabel(app, text="Cadastrar Novo Jogo", font=("Arial", 20, "bold"))
+label_titulo.pack(pady=20)
+
+# Campo: Nome do Jogo
+label_nome = ctk.CTkLabel(app, text="Nome do Jogo:", font=("Arial", 12))
+label_nome.pack(anchor="w", padx=40)
+entry_nome = ctk.CTkEntry(app, placeholder_text="Ex: Elden Ring", width=320)
+entry_nome.pack(pady=(0, 15))
+
+# Campo: Categoria
+label_categoria = ctk.CTkLabel(app, text="Categoria:", font=("Arial", 12))
+label_categoria.pack(anchor="w", padx=40)
+combo_categoria = ctk.CTkOptionMenu(app, values=["RPG", "FPS", "Ação", "Aventura", "Estratégia", "Outros"], width=320)
+combo_categoria.pack(pady=(0, 15))
+
+# Campo: Nota
+label_nota = ctk.CTkLabel(app, text="Nota (0 a 10):", font=("Arial", 12))
+label_nota.pack(anchor="w", padx=40)
+entry_nota = ctk.CTkEntry(app, placeholder_text="Ex: 9.5", width=320)
+entry_nota.pack(pady=(0, 15))
+
+# Campo: Status
+label_status = ctk.CTkLabel(app, text="Status:", font=("Arial", 12))
+label_status.pack(anchor="w", padx=40)
+combo_status = ctk.CTkOptionMenu(app, values=["Jogando", "Zerado", "Na Fila", "Abandonado"], width=320)
+combo_status.pack(pady=(0, 25))
+
+# Botão de Cadastrar
+btn_salvar = ctk.CTkButton(app, text="Salvar no Banco de Dados", command=cadastrar_jogo, fg_color="#2FA572", hover_color="#1E6F4C", font=("Arial", 13, "bold"), height=40, width=320)
+btn_salvar.pack()
+
+app.mainloop()
